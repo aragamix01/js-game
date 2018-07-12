@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Snake Game</title>
+</head>
+
+<body>
+    <div>
+        Score :
+        <span id="score">0</span>
+    </div>
+    <canvas id="gameCanvas" width="300" height="300"></canvas>
+    <script>
+        const CANVAS_BORDER_COLOUR = 'black';
+        const CANVAS_BACKGROUND_COLOUR = 'white';
+
+        let snake = [{
+                x: 150,
+                y: 150
+            },
+            {
+                x: 140,
+                y: 150
+            },
+            {
+                x: 130,
+                y: 150
+            },
+            {
+                x: 120,
+                y: 150
+            },
+            {
+                x: 110,
+                y: 150
+            },
+        ]
+
+        let dx = 10;
+        let dy = 0;
+
+        let foodX = 0;
+        let foodY = 0;
+
+        let trapX = 0;
+        let trapY = 0;
+        let color = 1;
+
+        let traps = [
+            { x: 0,y: 0 },
+            { x: 0,y: 0 },
+            { x: 0,y: 0 },
+            { x: 0,y: 0 },
+            { x: 0,y: 0 },
+            { x: 0,y: 0 },
+            { x: 0,y: 0 },
+            { x: 0,y: 0 },
+            { x: 0,y: 0 },
+            { x: 0,y: 0 },
+            { x: 0,y: 0 },
+            { x: 0,y: 0 },
+            { x: 0,y: 0 },
+            { x: 0,y: 0 },
+        ];
+
+
+        var gameCanvas = document.getElementById('gameCanvas');
+        document.addEventListener('keydown', changeDirection);
+
+        var ctx = gameCanvas.getContext('2d');
+
+        ctx.fillStyle = CANVAS_BACKGROUND_COLOUR;
+        ctx.strokestyle = CANVAS_BORDER_COLOUR;
+
+        ctx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+        ctx.strokeRect(0, 0, gameCanvas.width, gameCanvas.height);
+
+        main();
+        createFood();
+        createTrap();
+
+        function main() {
+            setTimeout(function onTick() {
+                if (didGameEnd()) {
+                    return;
+                }
+                clearCanvas();
+                drawFood();
+                drawTrap();
+                advanceSnake();
+                drawSnake();
+                // Call main again
+                main();
+            }, 100)
+        }
+
+        function drawSnake() {
+            snake.forEach(drawSnakePart);
+        }
+
+        function drawSnakePart(snakePart) {
+            ctx.fillStyle = 'lightgreen';
+            ctx.strokestyle = 'darkgreen';
+
+            ctx.fillRect(snakePart.x, snakePart.y, 10, 10);
+            ctx.strokeRect(snakePart.x, snakePart.y, 10, 10);
+
+            ctx.fillStyle = 'yellow';
+            ctx.strokestyle = 'yellow';
+
+            ctx.fillRect(snake[0].x, snake[0].y, 10, 10);
+            ctx.strokeRect(snake[0].x, snake[0].y, 10, 10);
+        }
+
+        function advanceSnake() {
+            const hitLeftWall = snake[0].x < 0;
+            const hitRightWall = snake[0].x > gameCanvas.width - 10;
+            const hitToptWall = snake[0].y < 0;
+            const hitBottomWall = snake[0].y > gameCanvas.height - 10;
+            const didEatFood = snake[0].x === foodX && snake[0].y === foodY;
+
+            let head = {
+                x: snake[0].x + dx,
+                y: snake[0].y + dy
+            };
+
+            if (hitLeftWall) {
+                head = {
+                    x: snake[0].x + 300,
+                    y: snake[0].y + dy
+                }
+            }
+            if(hitRightWall) {
+                head = {
+                    x: snake[0].x - 300,
+                    y: snake[0].y + dy
+                }
+            }
+            if(hitToptWall) {
+                head = {
+                    x: snake[0].x + dx,
+                    y: snake[0].y + 300
+                }
+            }
+            if(hitBottomWall) {
+                head = {
+                    x: snake[0].x + dx,
+                    y: snake[0].y - 300
+                }
+            }
+
+            snake.unshift(head);
+
+            if (didEatFood) {
+                createFood();
+                document.getElementById('score').innerHTML++;
+            } else {
+                snake.pop();
+            }
+            status = 'none';
+        }
+
+        function clearCanvas() {
+            ctx.fillStyle = "white";
+            ctx.strokeStyle = "black";
+            ctx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+            ctx.strokeRect(0, 0, gameCanvas.width, gameCanvas.height);
+        }
+
+        function changeDirection(event) {
+            const LEFT_KEY = 37;
+            const RIGHT_KEY = 39;
+            const UP_KEY = 38;
+            const DOWN_KEY = 40;
+
+            const keyPressed = event.keyCode;
+            const goingUp = dy === -10;
+            const goingDown = dy === 10;
+            const goingRight = dx === 10;
+            const goingLeft = dx === -10;
+
+            if (keyPressed === LEFT_KEY && !goingRight) {
+                dx = -10;
+                dy = 0;
+            }
+            if (keyPressed === UP_KEY && !goingDown) {
+                dx = 0;
+                dy = -10;
+            }
+            if (keyPressed === RIGHT_KEY && !goingLeft) {
+                dx = 10;
+                dy = 0;
+            }
+            if (keyPressed === DOWN_KEY && !goingDown) {
+                dx = 0;
+                dy = 10;
+            }
+        }
+
+        function randomTen(min, max) {
+            return Math.round((Math.random() * (max - min) + min) / 10) * 10;
+        }
+
+        function createFood() {
+            foodX = randomTen(0, gameCanvas.width - 10);
+            foodY = randomTen(0, gameCanvas.height - 10);
+
+            snake.forEach(function isFoodOnSnake(part) {
+                const foodIsOnSnake = part.x == foodX && part.y == foodY;
+                if (foodIsOnSnake) {
+                    createFood();
+                }
+            });
+
+            traps.forEach(trap => {
+                const isFoodOnTrap = trap.x == foodX && trap.y == foodY;
+                if (isFoodOnTrap) {
+                    createFood();
+                }
+            });
+        }
+
+        function createTrap() {
+            traps.forEach(trap => {
+                trap.x = randomTen(0, gameCanvas.width - 10);
+                trap.y = trapY = randomTen(0, gameCanvas.height - 10);
+            });
+
+            traps.forEach(trap => {
+                const trapSameFood = trap.x == foodX && trap.y == foodY;
+                if(trapSameFood) createTrap();
+            });
+            console.log(traps);
+        }
+
+        function drawFood() {
+            ctx.fillStyle = 'red';
+            ctx.strokestyle = 'darkred';
+            ctx.fillRect(foodX, foodY, 10, 10);
+            ctx.strokeRect(foodX, foodY, 10, 10);
+        }
+
+        function drawTrap() {
+            ctx.fillStyle = 'black';
+            ctx.strokestyle = 'black';
+            traps.forEach(trap => {
+                ctx.fillRect(trap.x, trap.y, 10, 10);
+                ctx.strokeRect(trap.x, trap.y, 10, 10);
+            });
+        }
+
+        function didGameEnd() {
+            let end = false;
+            for (let i = 4; i < snake.length; i++) {
+                const didCollide = snake[i].x === snake[0].x && snake[i].y === snake[0].y
+                if (didCollide) return true
+            }
+
+            traps.forEach(trap => {
+                const isOnTrap = snake[0].x == trap.x && snake[0].y == trap.y;
+                if (isOnTrap) {
+                    end = true;
+                }
+            });
+            
+            if (end) {
+                return true;
+            }
+        }
+    </script>
+</body>
+
+</html>

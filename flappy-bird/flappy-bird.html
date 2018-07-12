@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Flappy bird</title>
+</head>
+<body>
+    <div>
+        Score : 
+        <span id="score">0</span>
+    </div>
+    <canvas id="gameCanvas" width="300" height="300"></canvas>
+    <script>
+        const CANVAS_BORDER_COLOUR = 'black';
+        const CANVAS_BACKGROUND_COLOUR = 'white';
+
+        var gameCanvas = document.getElementById('gameCanvas');
+        var ctx = gameCanvas.getContext('2d');
+        ctx.fillStyle = CANVAS_BACKGROUND_COLOUR;
+        ctx.strokeStyle = CANVAS_BORDER_COLOUR;
+
+        ctx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+        ctx.strokeRect(0, 0, gameCanvas.width, gameCanvas.height);
+        
+        document.addEventListener('keydown', changeDirection);
+
+        class Tube {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+            }
+        }
+
+        let bird = {
+            x: 50,
+            y: 150
+        }
+
+        let dx = 10;
+        let dy = 0;
+
+        let allOfTube = [];
+
+        allOfTube.push({
+            tubeDown: new Tube(290, randomTen(150, 280)),
+            tubeUp: new Tube(290, 0)
+        });
+
+        drawBird();
+        drawTube(allOfTube);
+        main();
+        setInterval(() => {
+            allOfTube.push({
+                tubeDown: new Tube(290, randomTen(150, 280)),
+                tubeUp: new Tube(290, 0)
+            });
+            drawTube(allOfTube);
+        },1500);
+        
+        function main() {
+            setTimeout(function onTick() {
+                if (isEndGame()) {
+                    return;
+                }
+                isPass();
+                clearCanvas();
+                flyAlong();
+                moveTube(allOfTube);
+
+                main();
+            }, 100)
+        }
+
+        function drawBird() {
+            ctx.fillStyle = 'yellow';
+            ctx.strokeStyle = 'black';
+
+            ctx.fillRect(bird.x, bird.y, 10, 10);
+            ctx.strokeRect(bird.x, bird.y, 10, 10);
+        }
+
+        function flyAlong() {
+            ctx.fillStyle = 'white';
+            ctx.strokeStyle = 'white';
+
+            ctx.fillRect(bird.x, bird.y, 10, 10);
+            ctx.strokeRect(bird.x, bird.y, 10, 10);
+
+            bird = {
+                x: bird.x,
+                y: bird.y + dy
+            }
+
+            ctx.fillStyle = 'yellow';
+            ctx.strokeStyle = 'black';
+
+            ctx.fillRect(bird.x, bird.y, 10, 10);
+            ctx.strokeRect(bird.x, bird.y, 10, 10);
+        }
+
+        function drawTube(tube) {
+            tube.forEach(pipe => {
+                pipe.tubeUp.y = pipe.tubeDown.y - 80;
+
+                let tempDown = pipe.tubeDown.y;
+                while(tempDown <= 290) {
+                    ctx.fillStyle = 'green';
+                    ctx.strokeStyle = 'black';
+                    ctx.fillRect(pipe.tubeDown.x, tempDown, 10, 10);
+                    ctx.strokeRect(pipe.tubeDown.x, tempDown, 10, 10);
+                    tempDown+=10;
+                }
+
+                let tempUp = pipe.tubeUp.y;
+                while(tempUp >= 0) {
+                    ctx.fillStyle = 'green';
+                    ctx.strokeStyle = 'red';
+                    ctx.fillRect(pipe.tubeUp.x, tempUp, 10, 10);
+                    ctx.strokeRect(pipe.tubeUp.x, tempUp, 10, 10);
+                    tempUp-=10;
+                }
+            });
+        }
+
+        function moveTube(tube) {
+            if (tube) {
+                tube.forEach((pipe, index) => {
+                    if (pipe.tubeDown.x <= 0 && pipe.tubeUp.x <=0) {
+                        tube.splice(0, index);
+                    }else {
+                        pipe.tubeDown.x -= 10;
+                        pipe.tubeUp.x -= 10;
+
+                        let tempDown = pipe.tubeDown.y;
+                        while(tempDown <= 290) {
+                            ctx.fillStyle = 'green';
+                            ctx.strokeStyle = 'black';
+                            ctx.fillRect(pipe.tubeDown.x, tempDown, 10, 10);
+                            ctx.strokeRect(pipe.tubeDown.x, tempDown, 10, 10);
+                            tempDown+=10;
+                        }
+
+                        let tempUp = pipe.tubeUp.y;
+                        while(tempUp >= 0) {
+                            ctx.fillStyle = 'green';
+                            ctx.strokeStyle = 'red';
+                            ctx.fillRect(pipe.tubeUp.x, tempUp, 10, 10);
+                            ctx.strokeRect(pipe.tubeUp.x, tempUp, 10, 10);
+                            tempUp-=10;
+                        }
+                    }
+                });
+            }
+        }
+
+        function clearCanvas() {
+            ctx.fillStyle = "white";
+            ctx.strokeStyle = "black";
+            ctx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+            ctx.strokeRect(0, 0, gameCanvas.width, gameCanvas.height);
+        }
+
+        function randomTen(min, max) {
+            return Math.round((Math.random() * (max - min) + min) / 10) * 10;
+        }
+
+        function changeDirection(event) {
+            const UP_KEY = 38;
+            const DOWN_KEY = 40;
+
+            const keyPressed = event.keyCode;
+            const goingUp = dy === -10;
+            const goingDown = dy === 10;
+
+            if (keyPressed === UP_KEY) {
+                dx = 0;
+                dy = -10;
+            }
+            if (keyPressed === DOWN_KEY) {
+                dx = 0;
+                dy = 10;
+            }
+        }
+
+        function isEndGame() {
+            let isHit = false;
+            allOfTube.forEach(tube => {
+                const hit = (bird.y >= tube.tubeDown.y
+                                && bird.x === tube.tubeDown.x) ||
+                                (bird.y <= tube.tubeUp.y
+                                && bird.x === tube.tubeUp.x);
+                if (hit) {
+                    isHit = true;
+                }
+            });
+            
+            if (isHit) {
+                return true;
+            }
+        }
+
+        function isPass() {
+            let isPass = false;
+            allOfTube.forEach(tube => {
+                const pass = (bird.y > tube.tubeDown.y - 90 
+                                && bird.y < tube.tubeUp.y + 90)
+                                && (bird.x === tube.tubeUp.x);
+                if (pass) {
+                    isPass = true;
+                }
+            });
+            if (isPass) {
+                document.getElementById('score').innerHTML++;
+            }
+        }
+    </script>
+</body>
+</html>
